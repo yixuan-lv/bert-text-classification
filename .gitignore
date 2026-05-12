@@ -1,8 +1,10 @@
 data/
-*.txt
 *.pth
+exp*/
+bert_toutiao_model/
 __pycache__/
 swanlog/
 .idea/
 .vscode/
 *.pyc
+!requirements.txt
