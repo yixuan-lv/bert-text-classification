@@ -1,6 +1,6 @@
 # 基于BERT的中文新闻标题分类（标准交叉熵版本）
 
-本项目基于 `bert-base-chinese` 预训练模型，对今日头条新闻标题进行15分类。实现了完整的数据预处理、模型训练、超参数对比与结果可视化流程，代码结构清晰，符合工程化规范。
+本项目基于 `bert-base-chinese` 预训练模型，使用自定义 `BertClassifier`（`nn.Module`）对今日头条新闻标题进行15分类。实现了数据预处理、模型训练、超参数对比与可视化，代码结构清晰。
 
 ## 数据集
 
@@ -13,11 +13,10 @@
 ## 项目结构
 .
 ├── config.json # 超参数配置文件
-├── train.py # 训练+评估+可视化主脚本
-├── models/
-│ └── dataset.py # 数据集类（返回原始文本）
-├── utils/
-│ └── helpers.py # 数据加载、collate_fn、评估函数
+├── train.py # 主训练脚本
+├── dataset.py # 数据集类
+├── model.py # 自定义BertClassifier模型
+├── utils.py # 数据加载、collate_fn、评估函数
 ├── data/ # 数据集（已忽略上传）
 ├── requirements.txt # 依赖包列表
 ├── README.md
@@ -26,12 +25,11 @@
 ## 环境配置
 
 ```bash
-# 创建conda环境（Python 3.9）
 conda create -n bert-text-cls python=3.9
 conda activate bert-text-cls
-
-# 安装依赖
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+
 requirements.txt 内容：
 torch>=1.9.0
 transformers>=4.20.0
@@ -41,49 +39,46 @@ seaborn>=0.11.0
 pandas>=1.1.0
 tqdm>=4.62.0
 超参数对比实验
-为了分析学习率和批次大小对模型性能的影响，我们设计了5组对比实验，所有实验均使用标准交叉熵损失，训练3个epoch。
+为分析学习率和批次大小对模型性能的影响，设计4组实验（训练3个epoch，使用标准交叉熵损失）：
 
 实验编号	learning_rate	batch_size	测试准确率
-1	2e-5	32	82.89%
-2	1e-5	32	79.42%
-3	3e-5	32	81.58%
-4（最优）	3e-5	16	83.27%
-5	2e-5	16	82.89%
+1	2e-5	32	81.95%
+2	1e-5	32	80.17%
+3（最优）	3e-5	32	83.46%
+4	3e-5	16	83.46%
 结论：
 
-学习率 3e-5 在批次大小为16时取得最佳效果，说明稍大的学习率配合小批量有助于提高泛化能力。
+学习率 3e-5 优于 2e-5 和 1e-5，稍大的学习率在此任务上收敛更好。
 
-相比批次大小32，批次大小16在本任务上表现更优（对比实验3和4）。
+批次大小 16 与 32 达到相同准确率（83.46%），考虑到训练效率，选择 batch_size=32 作为最终配置。
 
-学习率 1e-5 导致欠拟合，准确率最低（79.42%）。
+因此，最优模型为 学习率 3e-5，批次大小 32。
 
-因此，最终选择 学习率 3e-5，批次大小 16 作为最优模型。
-
-最优模型实验结果（实验四）
+最优模型实验结果（实验三）
 整体性能
 指标	数值
-测试准确率	83.27%
-测试F1分数	0.8327
-最佳验证准确率	83.10%
+测试准确率	83.46%
+测试F1分数	0.8346
+最佳验证准确率	83.20%
 各类别详细指标
 类别	precision	recall	f1-score	support
-news_agriculture	0.81	0.89	0.85	53
-news_car	0.89	0.94	0.92	99
-news_culture	0.94	0.86	0.90	77
-news_edu	0.85	0.93	0.89	74
-news_entertainment	0.83	0.87	0.85	108
-news_finance	0.79	0.70	0.74	74
-news_game	0.78	0.84	0.81	80
-news_house	0.89	0.84	0.86	49
-news_military	0.83	0.75	0.79	69
-news_sports	0.94	0.85	0.89	103
-news_story	0.75	0.71	0.73	17
-news_tech	0.76	0.82	0.78	114
-news_travel	0.82	0.83	0.82	59
-news_world	0.73	0.76	0.74	74
-stock	1.00	0.50	0.67	14
+news_agriculture	0.84	0.79	0.82	53
+news_car	0.91	0.94	0.93	99
+news_culture	0.94	0.83	0.88	77
+news_edu	0.86	0.92	0.89	74
+news_entertainment	0.85	0.88	0.86	108
+news_finance	0.72	0.77	0.75	74
+news_game	0.76	0.85	0.80	80
+news_house	0.85	0.80	0.82	49
+news_military	0.83	0.72	0.78	69
+news_sports	0.97	0.84	0.90	103
+news_story	0.82	0.82	0.82	17
+news_tech	0.75	0.82	0.78	114
+news_travel	0.85	0.86	0.86	59
+news_world	0.75	0.82	0.79	74
+stock	0.86	0.43	0.57	14
 加权平均	0.84	0.83	0.83	1064
-注：stock 类样本极少（14个），F1为0.67，属于数据不平衡导致的正常现象。
+注：stock 类样本极少（14个），F1为0.57，属于数据不平衡导致的正常现象。
 
 可视化结果
 混淆矩阵

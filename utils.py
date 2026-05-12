@@ -26,8 +26,8 @@ def evaluate(loader, model, device):
         attention_mask = batch['attention_mask'].to(device)
         labels = batch['labels'].to(device)
         with torch.no_grad():
-            outputs = model(input_ids, attention_mask=attention_mask)
-        preds = torch.argmax(outputs.logits, dim=1)
+            logits = model(input_ids, attention_mask=attention_mask)   # 直接获得 logits 张量
+        preds = torch.argmax(logits, dim=1)                            # 去掉 .logits
         all_preds.extend(preds.cpu().numpy())
         all_labels.extend(labels.cpu().numpy())
     acc = accuracy_score(all_labels, all_preds)
