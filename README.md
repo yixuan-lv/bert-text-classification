@@ -71,13 +71,13 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 `requirements.txt` 内容如下：
 
 ```text
-torch>=1.9.0
-transformers>=4.20.0
-scikit-learn>=1.0.0
-matplotlib>=3.3.0
-seaborn>=0.11.0
-pandas>=1.1.0
-tqdm>=4.62.0
+torch==2.8.0
+transformers==4.57.6
+scikit-learn==1.6.1
+matplotlib==3.4.3
+seaborn==0.13.2
+pandas==2.3.3
+tqdm==4.67.3
 ```
 
 ## 模型结构
